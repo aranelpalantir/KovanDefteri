@@ -177,25 +177,6 @@ export default function SettingsScreen() {
         </Card>
       )}
 
-      {updates.updateReady && (
-        <Card style={{ backgroundColor: theme.primarySoft, borderColor: 'transparent' }}>
-          <Text variant="heading" style={{ color: theme.primary }}>
-            Yeni sürüm hazır
-          </Text>
-          <Text variant="body" style={{ marginTop: Spacing.xs, marginBottom: Spacing.md }}>
-            İnternete bağlıyken zaten yeni sürümü kullanıyorsunuz. Güncelleme, telefonda
-            tuttuğumuz çevrimdışı kopyayı da yeniler — böylece çekmediği yerde de yeni sürüm
-            açılır. Kayıtlarınız etkilenmez.
-          </Text>
-          <Button
-            title={updates.applying ? 'Güncelleniyor…' : 'Şimdi güncelle'}
-            icon="refresh"
-            loading={updates.applying}
-            onPress={updates.applyUpdate}
-          />
-        </Card>
-      )}
-
       <Section title="Yedekleme">
         <View style={{ gap: Spacing.md }}>
           <Card accent={backup.color}>
@@ -364,10 +345,10 @@ export default function SettingsScreen() {
               />
               <Text variant="caption" color="textMuted">
                 {updates.updateReady
-                  ? 'Yeni sürüm indirildi, yukarıdan uygulayabilirsiniz.'
+                  ? 'Yeni bir önbellekleme sürümü indirildi. Uygulamayı tamamen kapatıp açtığınızda kendiliğinden geçerli olacak — yapmanız gereken bir şey yok.'
                   : updates.lastChecked
-                    ? `Son bakılan: ${updates.lastChecked.toLocaleTimeString('tr-TR')} — bu en güncel sürüm.`
-                    : 'İnternete bağlandığınızda güncellemeler kendiliğinden inip burada bildirilir.'}
+                    ? `Son bakılan: ${updates.lastChecked.toLocaleTimeString('tr-TR')} — en güncel sürümdesiniz.`
+                    : 'Güncellemeler internete bağlıyken kendiliğinden gelir; ayrıca bir şey yapmanız gerekmez.'}
               </Text>
             </View>
           ) : (
