@@ -46,9 +46,39 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('message', (event) => {
   const data = event.data;
   if (!data) return;
+
   if (data.type === 'SKIP_WAITING') self.skipWaiting();
+
   if (data.type === 'GET_BUILD_ID' && event.ports && event.ports[0]) {
     event.ports[0].postMessage(BUILD_ID);
+  }
+
+  /**
+   * Sayfa "çevrimdışı kopyayı tazele" dediğinde verilen adresleri ağdan
+   * zorla çekip önbelleğe yazar. Service worker'ın içindeki fetch kendi
+   * fetch dinleyicisine takılmadığı için burada gerçekten ağa gidilir;
+   * sayfadan yapılan istek önbellekten dönebilirdi.
+   */
+  if (data.type === 'REFRESH_CACHE' && Array.isArray(data.urls)) {
+    const port = event.ports && event.ports[0];
+    event.waitUntil(
+      (async () => {
+        const cache = await caches.open(VERSION);
+        const results = await Promise.all(
+          data.urls.map(async (url) => {
+            try {
+              const response = await fetch(url, { cache: 'reload' });
+              if (!response || response.status !== 200) return false;
+              await cache.put(url === '/' ? SHELL : url, response);
+              return true;
+            } catch {
+              return false;
+            }
+          }),
+        );
+        if (port) port.postMessage({ ok: results.every(Boolean), count: results.filter(Boolean).length });
+      })(),
+    );
   }
 });
 

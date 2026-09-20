@@ -15,7 +15,7 @@ import { daysSince, formatLong, relativeDays } from '@/lib/date';
 import { confirm } from '@/lib/confirm';
 import { buildDemoDatabase } from '@/lib/demo';
 import { useStore } from '@/lib/store';
-import { useAppUpdates } from '@/lib/updates';
+import { useOfflineReadiness } from '@/lib/offline';
 import type { Database } from '@/lib/types';
 import { Radius, Spacing } from '@/theme/colors';
 
@@ -27,7 +27,7 @@ export default function SettingsScreen() {
   const theme = useTheme();
   const router = useRouter();
   const { db, removeApiary, replaceAll, reset, markBackupTaken } = useStore();
-  const updates = useAppUpdates();
+  const offline = useOfflineReadiness();
 
   const [notice, setNotice] = useState<Notice>(null);
   const [pending, setPending] = useState<Pending>(null);
@@ -163,6 +163,41 @@ export default function SettingsScreen() {
 
   const noticeColor =
     notice?.tone === 'ok' ? theme.success : notice?.tone === 'error' ? theme.danger : theme.info;
+
+  /** Cevrimdisi hazirlik rozeti: arilikta sinyal kesilse uygulama acilir mi? */
+  const offlineTone = (() => {
+    const missing = Math.max(0, offline.need - offline.have);
+    switch (offline.status) {
+      case 'ready':
+        return {
+          title: 'Çevrimdışı hazır',
+          hint: 'Sinyal olmasa da uygulama açılır. Arılığa çıkabilirsiniz.',
+          color: theme.success,
+          icon: 'cloud-done-outline' as const,
+        };
+      case 'partial':
+        return {
+          title: 'Eksik hazırlık',
+          hint: `${missing} dosya önbellekte yok. İnternetteyken tazeleyin, yoksa çekmediği yerde açılmayabilir.`,
+          color: theme.warning,
+          icon: 'cloud-offline-outline' as const,
+        };
+      case 'missing':
+        return {
+          title: 'Çevrimdışı hazır değil',
+          hint: 'Uygulama henüz telefona kopyalanmadı. İnternete bağlıyken tazeleyin.',
+          color: theme.danger,
+          icon: 'cloud-offline-outline' as const,
+        };
+      default:
+        return {
+          title: 'Bakılıyor…',
+          hint: 'Önbellek denetleniyor.',
+          color: theme.textMuted,
+          icon: 'ellipsis-horizontal' as const,
+        };
+    }
+  })();
 
   return (
     <ScrollView
@@ -334,29 +369,47 @@ export default function SettingsScreen() {
             </Text>
           </View>
 
-          {updates.supported ? (
-            <View style={{ marginTop: Spacing.md, gap: Spacing.sm }}>
-              <Button
-                title={updates.checking ? 'Bakılıyor…' : 'Güncelleme denetle'}
-                variant="secondary"
-                icon="refresh-outline"
-                loading={updates.checking}
-                onPress={updates.checkNow}
-              />
-              <Text variant="caption" color="textMuted">
-                {updates.updateReady
-                  ? 'Yeni bir önbellekleme sürümü indirildi. Uygulamayı tamamen kapatıp açtığınızda kendiliğinden geçerli olacak — yapmanız gereken bir şey yok.'
-                  : updates.lastChecked
-                    ? `Son bakılan: ${updates.lastChecked.toLocaleTimeString('tr-TR')} — en güncel sürümdesiniz.`
-                    : 'Güncellemeler internete bağlıyken kendiliğinden gelir; ayrıca bir şey yapmanız gerekmez.'}
+          <Text variant="caption" color="textMuted" style={{ marginTop: Spacing.md }}>
+            Güncellemeler internete bağlıyken kendiliğinden gelir; yapmanız gereken bir şey yok.
+          </Text>
+        </Card>
+      </Section>
+
+      <Section title="Çevrimdışı hazırlık">
+        {offline.status === 'unsupported' ? (
+          <Card>
+            <Text variant="body" color="textMuted">
+              Bu bilgi yalnızca ana ekrana eklenmiş web sürümünde gösterilir.
+            </Text>
+          </Card>
+        ) : (
+          <Card accent={offlineTone.color}>
+            <View style={styles.backupRow}>
+              <Ionicons name={offlineTone.icon} size={18} color={offlineTone.color} />
+              <Text variant="heading" style={{ color: offlineTone.color, flex: 1 }}>
+                {offlineTone.title}
               </Text>
             </View>
-          ) : (
-            <Text variant="caption" color="textMuted" style={{ marginTop: Spacing.md }}>
-              Çevrimdışı güncelleme yalnızca ana ekrana eklenmiş web sürümünde çalışır.
+            <Text variant="caption" color="textMuted">
+              {offlineTone.hint}
             </Text>
-          )}
-        </Card>
+
+            <View style={{ marginTop: Spacing.md }}>
+              <Button
+                title={offline.refreshing ? 'Tazeleniyor…' : 'Çevrimdışı kopyayı tazele'}
+                variant="secondary"
+                icon="cloud-download-outline"
+                loading={offline.refreshing}
+                onPress={offline.refresh}
+              />
+            </View>
+            {offline.lastRefreshed && (
+              <Text variant="caption" color="textMuted" style={{ marginTop: Spacing.sm }}>
+                Son tazelenen: {offline.lastRefreshed.toLocaleTimeString('tr-TR')}
+              </Text>
+            )}
+          </Card>
+        )}
       </Section>
 
       <Section title="Veri">
