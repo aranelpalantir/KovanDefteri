@@ -94,14 +94,36 @@ export function useOfflineReadiness() {
   }, []);
 
   useEffect(() => {
-    evaluate();
-    if (!supported()) return;
+    if (!supported()) {
+      setState((s) => ({ ...s, status: 'unsupported' }));
+      return;
+    }
+
+    let cancelled = false;
+    const run = () => {
+      if (!cancelled) evaluate();
+    };
+
+    /**
+     * Ilk ziyarette service worker sayfa yuklendikten SONRA kuruluyor ve
+     * onbellegi o sirada dolduruyor. Hemen olcersek "hazir degil" deyip
+     * bos yere korkutuyoruz. Bu yuzden once worker'in etkinlesmesini
+     * bekliyor, ardindan birkac kez daha bakiyoruz.
+     */
+    navigator.serviceWorker.ready.then(run).catch(() => {});
+    const probes = [0, 1500, 4000].map((delay) => setTimeout(run, delay));
+
     // Uygulama öne geldiğinde durum değişmiş olabilir.
     const onVisible = () => {
-      if (document.visibilityState === 'visible') evaluate();
+      if (document.visibilityState === 'visible') run();
     };
     document.addEventListener('visibilitychange', onVisible);
-    return () => document.removeEventListener('visibilitychange', onVisible);
+
+    return () => {
+      cancelled = true;
+      probes.forEach(clearTimeout);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [evaluate]);
 
   /** Gereken dosyaları ağdan zorla çekip önbelleğe yazdırır. */
