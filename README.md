@@ -100,22 +100,39 @@ Wrangler 4.x Node 22+ ister; bu makinedeki Node 20.11.1 ile 3.114.17 sürümü k
 
 ### Güncellemeler
 
-Her derleme `scripts/build-info.js` ile damgalanır (tarih, saat, git hash). Bu damga
-hem Ayarlar → Uygulama bölümünde görünür hem de service worker önbellek adına girer,
-yani her yayın kendi önbelleğini alır ve eskiler `activate` sırasında silinir.
+Her derleme `scripts/build-info.js` ile damgalanır (tarih, saat, git hash). Damga hem
+Ayarlar → Uygulama bölümünde görünür hem de service worker önbellek adına girer, yani
+her yayın kendi önbelleğini alır ve eskiler `activate` sırasında silinir.
 
-Akış:
+**Kullanıcının yapması gereken bir şey yok.** Uygulama çevrimiçi her açılışta kendini
+tazeler: gezinme isteği önce ağa gider, gelen yeni `index.html` önbelleğe yazılır, onun
+gösterdiği yeni paket önbellekte olmadığı için ağdan çekilip önbelleğe yazılır. Çevrimdışı
+kopya da böylece güncellenmiş olur.
 
-1. Uygulama açılırken `index.html` (no-cache) ağdan doğrulanır.
-2. Tarayıcı yeni `sw.js` görürse indirir ve **waiting** durumunda bekletir —
-   `sw.js` içinde bilerek `skipWaiting()` yok.
-3. Uygulama bunu algılar: Ayarlar dişlisinde turuncu nokta belirir, Ayarlar
-   ekranında "Yeni sürüm hazır" kartı çıkar.
-4. Kullanıcı "Şimdi güncelle" derse `SKIP_WAITING` mesajı gider, yeni worker
-   devralır ve sayfa yenilenir.
+Geriye kalan tek fark service worker'ın **kendi** kodudur (önbellekleme mantığı, ağ zaman
+aşımı gibi). O da bekleyen worker'ın devralmasıyla gelir ve kendiliğinden olur: uygulama
+tamamen kapatılıp açıldığında eski worker'ı kullanan istemci kalmaz, bekleyen etkinleşir.
 
-Devralma kullanıcının onayına bağlı; böylece muayene kaydederken ayağının altından
-paket değişmez. Ayarlar'dan "Güncelleme denetle" ile elle de sorulabilir.
+Bu ölçülerek doğrulandı — eski worker aktifken, onun önbelleğinde yeni kabuk ve yeni
+paket bulundu. Bu yüzden erken sürümlerdeki "yeni sürüm hazır / şimdi güncelle" akışı
+kaldırıldı: kullanıcıya yapması gerekmeyen bir iş gösteriyordu.
+
+### Çevrimdışı hazırlık
+
+Ayarlar → Çevrimdışı hazırlık, arıcının asıl sorusunu yanıtlar: *şimdi sinyalim kesilse
+bu uygulama açılır mı?*
+
+`src/lib/offline.ts` uygulamanın açılması için gereken dosyaları (kabuk, çalışan paket,
+ikon fontu) **çalışma anında belgeden toplar** — paket adı her derlemede değiştiği ve font
+yolu pakete gömülü olduğu için sabit bir liste bir sonraki derlemede yanlış olurdu.
+Ardından her birinin önbellekte olup olmadığına bakar.
+
+İlk ziyarette sayfa, service worker kontrolü almadan yüklenir; istekleri ondan geçmediği
+için paket ve font önbelleğe girmez. Bu durumda uygulama, kullanıcı o an internetteyse
+eksiği bir kez kendiliğinden tamamlar (`sw.js` içindeki `REFRESH_CACHE` mesajı ile;
+service worker'ın içindeki `fetch` kendi dinleyicisine takılmadığı için gerçekten ağa
+gidilir). Elle "Çevrimdışı kopyayı tazele" düğmesi, arılığa çıkmadan emin olmak
+isteyenler için durur.
 
 ### Yedekleme
 
