@@ -1,5 +1,7 @@
 # Kovan Defteri
 
+**Canlı:** https://kovan-defteri.pages.dev
+
 Arıcılar için çevrimdışı kovan muayene ve üretim takibi. Kağıt defterin yerini alır:
 her kovanın muayene geçmişini, ana arı durumunu, oğul riskini, yem seviyesini ve hasadını
 tek yerde tutar. İnternet bağlantısı gerekmez; hiçbir veri cihazdan çıkmaz.
@@ -62,8 +64,19 @@ Uygulama ana ekrana eklenebilir bir web uygulaması olarak paketlenmiştir:
 **Önemli kısıt:** Service worker yalnızca **güvenli bağlamda** (https veya localhost)
 kaydolur. Uygulamayı LAN üzerinden düz `http://192.168.x.x:8088` ile açarsanız ana
 ekrana ekleme, ikon ve tam ekran mod çalışır ama **çevrimdışı açılmaz** — sayfa yine
-sunucuya bağlanmak ister. Gerçek çevrimdışı kullanım için HTTPS üzerinden
-yayınlanması gerekir (herhangi bir ücretsiz statik hosting yeterli).
+sunucuya bağlanmak ister. Bu yüzden asıl dağıtım HTTPS üzerinden yapılıyor.
+
+### Yayınlama (Cloudflare Pages)
+
+```bash
+npm run build:web
+npx wrangler pages deploy dist --project-name=kovan-defteri --branch=main
+```
+
+`public/_redirects` SPA fallback'i, `public/_headers` önbellek politikasını belirler:
+uygulama kabuğu ve service worker her zaman taze, hash'li paketler kalıcı önbellekte.
+
+Wrangler 4.x Node 22+ ister; bu makinedeki Node 20.11.1 ile 3.114.17 sürümü kullanılıyor.
 
 #### Neden iOS'ta ana ekrana eklemek önemli
 
@@ -122,7 +135,7 @@ tutulur. Her mutasyon sonrası diske yazılır; okuma tarafı `useStore()` üzer
 - Yedekleme JSON'u dışa aktarır ama içe aktarma ekranı henüz yok.
 - Bildirim (push/yerel hatırlatma) yok; görevler uygulama içinde listelenir.
 - Fotoğraf eki ve konum/harita desteği yok.
-- Service worker kaydı gerçek bir tarayıcıda doğrulanmadı: geliştirme sırasında
-  kullanılan önizleme paneli service worker'ları tümden engelliyor. Betiğin sözdizimi
-  ve enjekte edilen etiketler doğrulandı; kaydın kendisi HTTPS üzerinde yayınlandıktan
-  sonra test edilmeli.
+- Önbellek adı (`kovan-defteri-v1`) elle yönetiliyor. Yeni dağıtımlarda kabuk ağ-önce
+  çekildiği ve paket adları hash'li olduğu için güncellemeler kendiliğinden geçer;
+  ancak eski paketler önbellekte birikir. Temizlemek için `sw.js` içindeki `VERSION`
+  değerini artırmak yeterli.

@@ -1,0 +1,4 @@
+# Tek sayfalik derleme: var olmayan yollar uygulama kabuguna duser.
+# Cloudflare Pages once gercek dosyayi arar, bulamazsa bu kurali uygular;
+# bu yuzden /sw.js ve /manifest.json dogru sekilde servis edilmeye devam eder.
+/*    /index.html   200

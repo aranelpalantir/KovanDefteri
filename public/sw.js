@@ -41,6 +41,10 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
+  // Service worker'in kendisi onbellege girmesin: guncelleme kontrolu
+  // her zaman agdan yapilmali.
+  if (url.pathname === '/sw.js') return;
+
   // Gezinme: ağ önce, çevrimdışıysa uygulama kabuğu.
   if (request.mode === 'navigate') {
     event.respondWith(
