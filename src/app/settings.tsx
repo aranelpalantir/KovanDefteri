@@ -11,6 +11,7 @@ import { Text } from '@/components/ui/text';
 import { useTheme } from '@/hooks/use-theme';
 import { exportBackup, parseBackup, pickBackupFile } from '@/lib/backup';
 import { BUILD_COMMIT, BUILD_DATE, BUILD_TIME, VERSION_LABEL } from '@/lib/build-info';
+import { daysSince, formatLong, relativeDays } from '@/lib/date';
 import { confirm } from '@/lib/confirm';
 import { buildDemoDatabase } from '@/lib/demo';
 import { useStore } from '@/lib/store';
@@ -25,7 +26,7 @@ type Pending = { db: Database; summary: string; exportedAt?: string } | null;
 export default function SettingsScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const { db, removeApiary, replaceAll, reset } = useStore();
+  const { db, removeApiary, replaceAll, reset, markBackupTaken } = useStore();
   const updates = useAppUpdates();
 
   const [notice, setNotice] = useState<Notice>(null);
@@ -36,6 +37,59 @@ export default function SettingsScreen() {
   const recordCount =
     db.apiaries.length + db.hives.length + db.inspections.length + db.harvests.length;
 
+  const backup = backupFreshness();
+
+  /**
+   * Yedegin ne kadar bayat oldugunu soyler. Kayit yoksa uyarmaya gerek yok;
+   * kayit varken hic yedek alinmamissa bu en riskli durum.
+   */
+  function backupFreshness(): {
+    text: string;
+    hint?: string;
+    color: string;
+    icon: 'shield-checkmark-outline' | 'alert-circle-outline' | 'time-outline' | 'information-circle-outline';
+  } {
+    if (recordCount === 0) {
+      return {
+        text: 'Yedeklenecek kayıt yok',
+        color: theme.textMuted,
+        icon: 'information-circle-outline',
+      };
+    }
+    if (!db.lastBackupAt) {
+      return {
+        text: 'Hiç yedek alınmadı',
+        hint: 'Telefonu kaybederseniz bu kayıtların kopyası hiçbir yerde yok.',
+        color: theme.danger,
+        icon: 'alert-circle-outline',
+      };
+    }
+    const day = db.lastBackupAt.slice(0, 10);
+    const gap = daysSince(day);
+    if (gap > 21) {
+      return {
+        text: `Son yedek ${gap} gün önce`,
+        hint: `${formatLong(day)} tarihinden beri yedek alınmadı.`,
+        color: theme.danger,
+        icon: 'alert-circle-outline',
+      };
+    }
+    if (gap > 7) {
+      return {
+        text: `Son yedek ${gap} gün önce`,
+        hint: 'Arılığa her gidişten sonra yedek almanız önerilir.',
+        color: theme.warning,
+        icon: 'time-outline',
+      };
+    }
+    return {
+      text: `Son yedek ${relativeDays(day)}`,
+      hint: formatLong(day),
+      color: theme.success,
+      icon: 'shield-checkmark-outline',
+    };
+  }
+
   const doExport = async () => {
     setNotice(null);
     if (recordCount === 0) {
@@ -43,6 +97,7 @@ export default function SettingsScreen() {
       return;
     }
     const result = await exportBackup(db);
+    if (result.ok) markBackupTaken();
     setNotice(
       result.ok
         ? {
@@ -141,11 +196,25 @@ export default function SettingsScreen() {
 
       <Section title="Yedekleme">
         <View style={{ gap: Spacing.md }}>
-          <Card>
+          <Card accent={backup.color}>
             <Text variant="heading">{recordCount} kayıt</Text>
             <Text variant="caption" color="textMuted" style={{ marginTop: Spacing.xs }}>
               {db.hives.length} kovan · {db.inspections.length} muayene · {db.harvests.length} hasat
-              {'\n'}
+            </Text>
+
+            <View style={[styles.backupRow, { borderTopColor: theme.border }]}>
+              <Ionicons name={backup.icon} size={16} color={backup.color} />
+              <Text variant="label" style={{ color: backup.color, flex: 1 }}>
+                {backup.text}
+              </Text>
+            </View>
+            {backup.hint ? (
+              <Text variant="caption" color="textMuted">
+                {backup.hint}
+              </Text>
+            ) : null}
+
+            <Text variant="caption" color="textMuted" style={{ marginTop: Spacing.md }}>
               Kayıtlar yalnızca bu cihazda. Buluta gönderilmiyor, otomatik yedeklenmiyor — yedek
               almak size bağlı.
             </Text>
@@ -352,6 +421,15 @@ const styles = StyleSheet.create({
   content: { padding: Spacing.lg, gap: Spacing.xl, paddingBottom: Spacing.xxl },
   row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.lg },
   versionRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 2 },
+  backupRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+    paddingTop: Spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    marginBottom: Spacing.xs,
+  },
   colorRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
   swatch: {
     width: 28,

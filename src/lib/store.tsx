@@ -37,6 +37,8 @@ type Store = {
 
   replaceAll: (db: Database) => void;
   reset: () => void;
+  /** Basarili bir disa aktarimdan sonra cagrilir. */
+  markBackupTaken: () => void;
 
   /** Okuma kolaylıkları */
   hivesOf: (apiaryId: ID) => Hive[];
@@ -156,6 +158,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
       replaceAll(next) {
         mutate(() => ({ ...emptyDatabase(), ...next, version: 1 }));
+      },
+      markBackupTaken() {
+        mutate((p) => ({ ...p, lastBackupAt: nowStamp() }));
       },
       reset() {
         dirty.current = true;

@@ -122,6 +122,8 @@ export type Database = {
   inspections: Inspection[];
   harvests: Harvest[];
   tasks: Task[];
+  /** En son ne zaman yedek dosyasi alindi (ISO zaman damgasi). */
+  lastBackupAt?: string;
 };
 
 export const emptyDatabase = (): Database => ({
