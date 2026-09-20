@@ -11,7 +11,7 @@
  * İlk çevrimiçi açılışta kullanılan her şey önbelleğe girer; sonraki açılışlar
  * arıcının tarlada olduğu gibi tamamen çevrimdışı çalışır.
  */
-const VERSION = 'kovan-defteri-v1';
+const VERSION = 'kovan-defteri-v2';
 const SHELL = '/';
 
 self.addEventListener('install', (event) => {

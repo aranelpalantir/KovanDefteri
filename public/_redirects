@@ -1,4 +1,12 @@
 # Tek sayfalik derleme: var olmayan yollar uygulama kabuguna duser.
-# Cloudflare Pages once gercek dosyayi arar, bulamazsa bu kurali uygular;
-# bu yuzden /sw.js ve /manifest.json dogru sekilde servis edilmeye devam eder.
+# Cloudflare Pages once gercek dosyayi arar, bulamazsa bu kurali uygular,
+# bu yuzden /sw.js ve /manifest.json dogru servis edilmeye devam eder.
+#
+# DIKKAT: Bu kural eksik bir varligin 404'unu da yutar; font ya da paket
+# kayip olsa tarayici 200 + HTML alir ve hata sessizce gecer (nitekim bir kez
+# oyle oldu: Pages "node_modules" klasorlerini yuklemiyor, ikon fontu hic
+# yayina cikmamisti). Pages _redirects icinde 404 statusunu desteklemedigi
+# icin bunu burada engelleyemiyoruz; guvenlik agi scripts/pwa-postbuild.js
+# icindeki derleme oncesi dogrulama: font ya da node_modules yolu eksikse
+# derleme hata verip duruyor.
 /*    /index.html   200

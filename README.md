@@ -76,6 +76,26 @@ npx wrangler pages deploy dist --project-name=kovan-defteri --branch=main
 `public/_redirects` SPA fallback'i, `public/_headers` önbellek politikasını belirler:
 uygulama kabuğu ve service worker her zaman taze, hash'li paketler kalıcı önbellekte.
 
+#### Cloudflare Pages tuzağı: `node_modules`
+
+Pages, **adı `node_modules` olan klasörleri yüklemiyor.** Expo ise varlıkları kaynak
+ağacındaki yollarına göre yazıyor, yani ikon fontu `dist/assets/node_modules/@expo/...`
+altında kalıyor ve hiç yayına çıkmıyor. Sonuç: uygulamada simge yerine boş kutular.
+`_redirects` içindeki `/*` kuralı 404'ü 200 + HTML'e çevirdiği için hata da sessiz
+kalıyor — font isteği `text/html` dönüyor ve kimse fark etmiyor.
+
+`scripts/pwa-postbuild.js` bunu iki adımda çözer:
+
+1. `assets/node_modules/` → `assets/vendor/` taşır, pakettteki referansları düzeltir.
+2. **Değiştirdiği dosyanın adını yeniler.** Expo dosya adındaki hash'i içerikten
+   üretiyor ve bu dosyalar `immutable` servis ediliyor; içeriği hash'lendikten sonra
+   değiştirirsek URL sabit kalır ve CDN, tarayıcı ya da service worker eski kopyayı
+   süresiz servis edebilir. Betik yeni içeriğin hash'ini hesaplayıp dosyayı yeniden
+   adlandırır ve `index.html`'deki atfı günceller.
+
+Derleme, `dist` içinde hiç `.ttf` kalmazsa ya da `node_modules` içeren bir yol
+kalırsa hata verip durur — bu sessiz kırılmaya karşı asıl güvenlik ağı budur.
+
 Wrangler 4.x Node 22+ ister; bu makinedeki Node 20.11.1 ile 3.114.17 sürümü kullanılıyor.
 
 #### Neden iOS'ta ana ekrana eklemek önemli
