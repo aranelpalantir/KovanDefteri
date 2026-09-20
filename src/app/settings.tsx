@@ -183,7 +183,9 @@ export default function SettingsScreen() {
             Yeni sürüm hazır
           </Text>
           <Text variant="body" style={{ marginTop: Spacing.xs, marginBottom: Spacing.md }}>
-            İndirildi ve kurulmayı bekliyor. Kayıtlarınız etkilenmez.
+            İnternete bağlıyken zaten yeni sürümü kullanıyorsunuz. Güncelleme, telefonda
+            tuttuğumuz çevrimdışı kopyayı da yeniler — böylece çekmediği yerde de yeni sürüm
+            açılır. Kayıtlarınız etkilenmez.
           </Text>
           <Button
             title={updates.applying ? 'Güncelleniyor…' : 'Şimdi güncelle'}
