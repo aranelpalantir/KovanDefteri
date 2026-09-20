@@ -25,18 +25,62 @@ tek yerde tutar. İnternet bağlantısı gerekmez; hiçbir veri cihazdan çıkma
 
 ## Çalıştırma
 
+### Geliştirme
+
 ```bash
 npm install
-npx expo start
+npx expo start --lan
 ```
 
-Telefonda **Expo Go** ile QR kodu okutun. Web önizlemesi için `npx expo start --web`.
+Telefonda **Expo Go** ile QR kodu okutun ya da `exp://<bilgisayar-ip>:8081` adresini
+elle girin. Bilgisayarda birden çok ağ adaptörü varsa (VMware, VirtualBox, Hyper-V, VPN)
+doğru olanı seçmeye dikkat edin — `npm run serve:web` çıktısı tüm adresleri listeler.
+
+Tarayıcı önizlemesi için `npx expo start --web`.
 
 > Expo SDK 57 Node.js **20.19.4+** ister. Bu makinede v20.11.1 kurulu; uygulama çalışıyor
 > ancak Metro başlarken sürüm uyarısı veriyor. Sorun yaşarsanız Node LTS'i güncelleyin.
 
 Uygulamayı boş görmek istemiyorsanız **Ayarlar → Örnek veri yükle** ile 5 kovanlık
 gerçekçi bir sezon yükleyebilirsiniz.
+
+### Web derlemesi (PWA)
+
+```bash
+npm run build:web
+npm run serve:web
+```
+
+`build:web` statik derlemeyi `dist/` altına çıkarır ve `scripts/pwa-postbuild.js` ile
+PWA başlık etiketlerini enjekte eder. `serve:web` bağımlılıksız bir statik sunucuyla
+`dist/` klasörünü ağa açar (SPA fallback dahil).
+
+Uygulama ana ekrana eklenebilir bir web uygulaması olarak paketlenmiştir:
+`manifest.json`, maskable ikonlar, `apple-touch-icon`, tam ekran (`standalone`) mod ve
+çevrimdışı önbellek için bir service worker.
+
+**Önemli kısıt:** Service worker yalnızca **güvenli bağlamda** (https veya localhost)
+kaydolur. Uygulamayı LAN üzerinden düz `http://192.168.x.x:8088` ile açarsanız ana
+ekrana ekleme, ikon ve tam ekran mod çalışır ama **çevrimdışı açılmaz** — sayfa yine
+sunucuya bağlanmak ister. Gerçek çevrimdışı kullanım için HTTPS üzerinden
+yayınlanması gerekir (herhangi bir ücretsiz statik hosting yeterli).
+
+#### Neden iOS'ta ana ekrana eklemek önemli
+
+Safari, 7 gün boyunca girilmeyen sitelerin `localStorage` verisini siler. Kovan
+kayıtları tarayıcı sekmesinde tutulursa bir hafta sonra kaybolabilir. Ana ekrana
+eklenen web uygulamaları bu kuralın dışındadır, o yüzden uygulamayı sekmede değil
+ana ekrandan kullanın.
+
+#### İkonlar
+
+```bash
+npm run icons
+```
+
+`scripts/make-icons.js` tüm ikonları (petek deseni) bağımlılık kullanmadan üretir:
+RGBA tamponu doldurup `zlib` ile PNG kodlar, 3x supersampling ile kenarları yumuşatır.
+Palet değişirse betikteki renkleri güncelleyip yeniden çalıştırmak yeterli.
 
 ## Mimari
 
@@ -60,6 +104,14 @@ src/
     demo.ts               örnek sezon üreteci
     confirm.ts            platformlar arası onay kutusu
   theme/colors.ts         bal temalı açık/koyu palet
+public/                   web derlemesine olduğu gibi kopyalanan dosyalar
+  manifest.json           PWA manifesti
+  sw.js                   çevrimdışı önbellek service worker
+  icons/                  PWA ve apple-touch ikonları
+scripts/
+  make-icons.js           ikon üreteci (bağımlılıksız PNG kodlayıcı)
+  pwa-postbuild.js        dist/index.html'e PWA etiketlerini enjekte eder
+  serve-dist.js           dist/ için statik sunucu (SPA fallback)
 ```
 
 Veri tek bir JSON belgesi olarak `AsyncStorage` içinde `kovan-defteri/v1` anahtarında
@@ -70,3 +122,7 @@ tutulur. Her mutasyon sonrası diske yazılır; okuma tarafı `useStore()` üzer
 - Yedekleme JSON'u dışa aktarır ama içe aktarma ekranı henüz yok.
 - Bildirim (push/yerel hatırlatma) yok; görevler uygulama içinde listelenir.
 - Fotoğraf eki ve konum/harita desteği yok.
+- Service worker kaydı gerçek bir tarayıcıda doğrulanmadı: geliştirme sırasında
+  kullanılan önizleme paneli service worker'ları tümden engelliyor. Betiğin sözdizimi
+  ve enjekte edilen etiketler doğrulandı; kaydın kendisi HTTPS üzerinde yayınlandıktan
+  sonra test edilmeli.

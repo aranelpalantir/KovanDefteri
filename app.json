@@ -20,8 +20,17 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "output": "single",
+      "bundler": "metro",
+      "favicon": "./assets/images/favicon.png",
+      "name": "Kovan Defteri",
+      "shortName": "Kovan",
+      "lang": "tr",
+      "themeColor": "#D98A0B",
+      "backgroundColor": "#FFFBF3",
+      "display": "standalone",
+      "orientation": "portrait",
+      "description": "Arıcılar için çevrimdışı kovan muayene ve üretim takibi."
     },
     "plugins": [
       "expo-router",
@@ -37,6 +46,7 @@
     "experiments": {
       "typedRoutes": false,
       "reactCompiler": true
-    }
+    },
+    "backgroundColor": "#FFFBF3"
   }
 }
