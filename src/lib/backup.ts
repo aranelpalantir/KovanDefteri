@@ -85,7 +85,9 @@ export function parseBackup(raw: string): ParseResult {
   return { ok: true, db, summary, exportedAt };
 }
 
-export type ExportOutcome = { ok: true; how: 'download' | 'share' } | { ok: false; error: string };
+export type ExportOutcome =
+  | { ok: true; how: 'download' | 'share'; name: string }
+  | { ok: false; error: string };
 
 /** Yedegi disa aktarir. Web'de dosya indirir, native'de paylasim acar. */
 export async function exportBackup(db: Database): Promise<ExportOutcome> {
@@ -104,7 +106,7 @@ export async function exportBackup(db: Database): Promise<ExportOutcome> {
       document.body.removeChild(a);
       // Blob'u hemen birakma: Safari indirmeyi baslatmadan iptal edebiliyor.
       setTimeout(() => URL.revokeObjectURL(url), 10_000);
-      return { ok: true, how: 'download' };
+      return { ok: true, how: 'download', name };
     } catch {
       return { ok: false, error: 'Dosya indirilemedi.' };
     }
@@ -112,7 +114,7 @@ export async function exportBackup(db: Database): Promise<ExportOutcome> {
 
   try {
     await Share.share({ title: name, message: payload });
-    return { ok: true, how: 'share' };
+    return { ok: true, how: 'share', name };
   } catch {
     return { ok: false, error: 'Paylaşım açılamadı.' };
   }

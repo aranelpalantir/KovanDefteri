@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/field';
 import { Section } from '@/components/ui/section';
 import { Text } from '@/components/ui/text';
 import { useTheme } from '@/hooks/use-theme';
-import { exportBackup, parseBackup, pickBackupFile } from '@/lib/backup';
+import { backupFileName, exportBackup, parseBackup, pickBackupFile } from '@/lib/backup';
 import { BUILD_COMMIT, BUILD_DATE, BUILD_TIME, VERSION_LABEL } from '@/lib/build-info';
 import { daysSince, formatLong, formatTime, relativeDays } from '@/lib/date';
 import { confirm } from '@/lib/confirm';
@@ -67,11 +67,15 @@ export default function SettingsScreen() {
     const day = db.lastBackupAt.slice(0, 10);
     const time = formatTime(db.lastBackupAt);
     const stamp = time ? `${formatLong(day)}, ${time}` : formatLong(day);
+    // Dosya adi tarihten turetiliyor; ayrica saklamaya gerek yok. Toast
+    // kaybolduktan haftalar sonra "hangi dosyayi ariyorum" sorusunu
+    // yanitlayan sey bu.
+    const file = backupFileName(new Date(db.lastBackupAt));
     const gap = daysSince(day);
     if (gap > 21) {
       return {
         text: `Son yedek ${gap} gün önce`,
-        hint: `${stamp} tarihinden beri yedek alınmadı.`,
+        hint: `${stamp} · ${file}`,
         color: theme.danger,
         icon: 'alert-circle-outline',
       };
@@ -79,14 +83,14 @@ export default function SettingsScreen() {
     if (gap > 7) {
       return {
         text: `Son yedek ${gap} gün önce`,
-        hint: `${stamp} · arılığa her gidişten sonra yedek almanız önerilir.`,
+        hint: `${stamp} · ${file}`,
         color: theme.warning,
         icon: 'time-outline',
       };
     }
     return {
       text: `Son yedek ${relativeDays(day)}`,
-      hint: stamp,
+      hint: `${stamp} · ${file}`,
       color: theme.success,
       icon: 'shield-checkmark-outline',
     };
@@ -104,10 +108,13 @@ export default function SettingsScreen() {
       result.ok
         ? {
             tone: 'ok',
+            // Dosyanin nereye indigini uygulama bilemez: tarayiciya, isletim
+            // sistemine ve kullanicinin indirme klasoru ayarina bagli. Bildigimiz
+            // tek sey dosyanin adi; aranabilecek bilgi de zaten o.
             text:
               result.how === 'download'
-                ? 'Yedek dosyası indirildi. iPhone’da Dosyalar uygulamasında, İndirilenler klasöründe.'
-                : 'Yedek paylaşıma açıldı.',
+                ? `${result.name} indirildi. Telefonun dışında bir yerde de saklayın.`
+                : `${result.name} paylaşıma açıldı.`,
           }
         : { tone: 'error', text: result.error },
     );
