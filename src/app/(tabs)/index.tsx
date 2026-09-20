@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Stack, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
@@ -67,16 +67,6 @@ export default function HivesScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.bg }]}>
-      <Stack.Screen
-        options={{
-          headerRight: () => (
-            <Pressable onPress={() => router.push('/settings')} hitSlop={12}>
-              <Ionicons name="settings-outline" size={22} color={theme.text} />
-            </Pressable>
-          ),
-        }}
-      />
-
       <FlatList
         data={visible}
         keyExtractor={(item) => item.hive.id}
