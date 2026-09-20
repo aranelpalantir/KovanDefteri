@@ -218,6 +218,39 @@ scripts/
 Veri tek bir JSON belgesi olarak `AsyncStorage` içinde `kovan-defteri/v1` anahtarında
 tutulur. Her mutasyon sonrası diske yazılır; okuma tarafı `useStore()` üzerinden gider.
 
+### Şema göçü
+
+`src/lib/migrate.ts` sürümlü bir göç zinciri tutar. Yeni bir kırıcı değişiklik için:
+
+1. `SCHEMA_VERSION`'ı artırın.
+2. `MIGRATIONS` listesine `{ to, describe, migrate }` ekleyin.
+3. `scripts/migrations.test.ts` içine eski bir belgeyle test ekleyin.
+
+Dosya çalışma zamanında hiçbir şey import etmez (yalnızca tip), bu yüzden Node onu
+doğrudan çalıştırabiliyor:
+
+```bash
+npm run test:migrations
+```
+
+Davranış kuralları:
+
+| Durum | Sonuç |
+|---|---|
+| Sürüm bilgisi yok | v1 sayılır |
+| Eksik diziler | Boş dizi ile tamamlanır |
+| Belge uygulamadan **yeni** | **Reddedilir** — eski kod yeni alanları anlamaz, üzerine yazarsa veri gider |
+| Göç hata verir | Hiçbir şey yazılmaz |
+| Bozuk JSON | Reddedilir |
+
+### Okunamayan veri
+
+`loadDatabase()` eskiden bozuk JSON'da boş veritabanı dönüyordu; ardından ilk kayıtta
+orijinalin üzerine yazılıyordu. Artık hata yukarı bildiriliyor ve uygulama **kilitleniyor**:
+hiçbir mutasyon kabul edilmiyor, diske yazılmıyor ve uygulamanın yerine
+`src/components/recovery-screen.tsx` çıkıyor. Ham metin ekranda gösteriliyor, dosya olarak
+alınabiliyor; "sıfırdan başla" ayrı ve onaylı bir seçim.
+
 ## Bilinen sınırlar
 
 - Bildirim (push/yerel hatırlatma) yok; görevler uygulama içinde listelenir.
