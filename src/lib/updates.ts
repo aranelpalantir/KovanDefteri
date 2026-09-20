@@ -58,9 +58,46 @@ export function useAppUpdates() {
       });
     };
 
+    /**
+     * Tarayici yeni sw.js'i KENDILIGINDEN yalnizca gercek bir sayfa
+     * yuklemesinde ve ~24 saatte bir kontrol ediyor. Uygulama acik kalip
+     * kullanici sadece sekmeler arasinda gezindiginde (expo-router istemci
+     * tarafinda gecis yapar, sayfa yeniden yuklenmez) hicbir kontrol
+     * olmuyordu ve guncelleme hic fark edilmiyordu. Bu yuzden kontrolu
+     * kendimiz tetikliyoruz.
+     */
+    let lastCheck = 0;
+    const MIN_GAP_MS = 60_000; // sunucuyu gereksiz yormayalim
+    const POLL_MS = 15 * 60_000;
+
+    const maybeCheck = async (force = false) => {
+      if (cancelled || !registration) return;
+      const now = Date.now();
+      if (!force && now - lastCheck < MIN_GAP_MS) return;
+      lastCheck = now;
+      try {
+        await registration.update();
+      } catch {
+        // Cevrimdisiyken sessizce gec.
+      }
+    };
+
     navigator.serviceWorker.ready.then((reg) => {
-      if (!cancelled) watch(reg);
+      if (cancelled) return;
+      watch(reg);
+      // Uygulama acilir acilmaz bir kere bak.
+      maybeCheck(true);
     });
+
+    // Uygulama one geldiginde (baska uygulamadan donus, ekran acilmasi) bak.
+    const onVisible = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') maybeCheck();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+
+    // Uzun sure acik kalirsa periyodik bak.
+    const timer = setInterval(() => maybeCheck(), POLL_MS);
 
     // Yeni worker devraldiginda sayfayi tazele ki kod ile varliklar ayni
     // surumden olsun.
@@ -72,6 +109,9 @@ export function useAppUpdates() {
 
     return () => {
       cancelled = true;
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
       navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
       registration = undefined;
     };
