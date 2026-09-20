@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { HeaderBack } from '@/components/header-back';
 import { StoreProvider } from '@/lib/store';
 import { Colors } from '@/theme/colors';
 
@@ -34,6 +35,8 @@ export default function RootLayout() {
               headerTintColor: palette.primary,
               headerTitleStyle: { color: palette.text },
               contentStyle: { backgroundColor: palette.bg },
+              // Kendi geri dugmemiz: yigin bossa bile cikis birakir.
+              headerLeft: () => <HeaderBack />,
             }}>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="apiary/new" options={{ title: 'Yeni Arılık', presentation: 'modal' }} />

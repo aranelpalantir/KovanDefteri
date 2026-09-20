@@ -3,11 +3,11 @@
  * Kaynak: scripts/build-info.js (her `npm run build:web` calistiginda yenilenir)
  */
 
-export const BUILD_ID = '2026.09.20-1955-537a673-dirty';
+export const BUILD_ID = '2026.09.20-1956-5781325';
 export const BUILD_DATE = '2026.09.20';
-export const BUILD_TIME = '19:55';
-export const BUILD_COMMIT = '537a673';
-export const BUILD_DIRTY = true;
+export const BUILD_TIME = '19:56';
+export const BUILD_COMMIT = '5781325';
+export const BUILD_DIRTY = false;
 
 /** Ayarlar ekraninda gosterilen kisa surum etiketi. */
-export const VERSION_LABEL = '2026.09.20 · 537a673 (kaydedilmemis degisiklikler)';
+export const VERSION_LABEL = '2026.09.20 · 5781325';
