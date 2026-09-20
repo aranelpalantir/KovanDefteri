@@ -24,7 +24,13 @@ function gitDirty() {
     const out = execSync('git status --porcelain', { stdio: ['ignore', 'pipe', 'ignore'] })
       .toString()
       .trim();
-    return out.length > 0;
+    // build-info.ts'in kendisi her derlemede yeniden yaziliyor; onu saymazsak
+    // bayrak "gercekten kaydedilmemis degisiklik var mi" sorusunu yanitlar.
+    const lines = out
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0 && !l.endsWith('src/lib/build-info.ts'));
+    return lines.length > 0;
   } catch {
     return false;
   }
