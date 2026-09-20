@@ -98,6 +98,57 @@ kalırsa hata verip durur — bu sessiz kırılmaya karşı asıl güvenlik ağ�
 
 Wrangler 4.x Node 22+ ister; bu makinedeki Node 20.11.1 ile 3.114.17 sürümü kullanılıyor.
 
+### Güncellemeler
+
+Her derleme `scripts/build-info.js` ile damgalanır (tarih, saat, git hash). Bu damga
+hem Ayarlar → Uygulama bölümünde görünür hem de service worker önbellek adına girer,
+yani her yayın kendi önbelleğini alır ve eskiler `activate` sırasında silinir.
+
+Akış:
+
+1. Uygulama açılırken `index.html` (no-cache) ağdan doğrulanır.
+2. Tarayıcı yeni `sw.js` görürse indirir ve **waiting** durumunda bekletir —
+   `sw.js` içinde bilerek `skipWaiting()` yok.
+3. Uygulama bunu algılar: Ayarlar dişlisinde turuncu nokta belirir, Ayarlar
+   ekranında "Yeni sürüm hazır" kartı çıkar.
+4. Kullanıcı "Şimdi güncelle" derse `SKIP_WAITING` mesajı gider, yeni worker
+   devralır ve sayfa yenilenir.
+
+Devralma kullanıcının onayına bağlı; böylece muayene kaydederken ayağının altından
+paket değişmez. Ayarlar'dan "Güncelleme denetle" ile elle de sorulabilir.
+
+### Yedekleme
+
+Ayarlar → Yedekleme:
+
+- **Yedek dosyası indir** — web'de gerçek bir `.json` dosyası indirir
+  (`kovan-defteri-YYYY-AA-GG.json`), native'de paylaşım sayfası açar.
+- **Yedekten geri yükle** — dosya seçtirir. Dosya seçilemeyen ortamlar için
+  metin yapıştırma seçeneği de var.
+
+Geri yükleme iki aşamalı: dosya önce doğrulanır ve içeriğinin özeti
+(kaç arılık/kovan/muayene, alındığı tarih) gösterilir; kullanıcı onaylayana kadar
+hiçbir şey yazılmaz. **Bozuk bir dosya mevcut kayıtların üzerine yazmaz.** Geri
+yükleme birleştirme değil, yerine koymadır ve bu ekranda açıkça yazar.
+
+Eski sürümün düz veritabanı JSON'u da kabul edilir, sarmalanmış yeni biçim de.
+
+### Verilerin silinebileceği durumlar
+
+Kayıtlar `localStorage`'da, yalnızca cihazda. Bilinen kayıp senaryoları:
+
+| Durum | Sonuç |
+|---|---|
+| Safari → Geçmişi ve Web Sitesi Verilerini Sil | **Silinir** |
+| Safari → Gelişmiş → Web Sitesi Verileri → siteyi sil | **Silinir** |
+| Ana ekran ikonunu silmek | **Silinir** |
+| Tarayıcı sekmesinde 7 gün girilmemek (ITP) | Sekmede silinir; ana ekrana eklenmiş uygulamada silinmez |
+| Cihaz depolaması kritik seviyeye düşmek | Silinebilir |
+| Uygulama güncellemesi | Silinmez — güncelleme yalnızca kodu değiştirir |
+| Telefonu kaybetmek / sıfırlamak | **Silinir**, iCloud yedeğinde olduğuna güvenilmemeli |
+
+Kısacası: düzenli olarak yedek dosyası indirin ve telefonun dışında bir yerde tutun.
+
 #### Neden iOS'ta ana ekrana eklemek önemli
 
 Safari, 7 gün boyunca girilmeyen sitelerin `localStorage` verisini siler. Kovan
@@ -152,8 +203,9 @@ tutulur. Her mutasyon sonrası diske yazılır; okuma tarafı `useStore()` üzer
 
 ## Bilinen sınırlar
 
-- Yedekleme JSON'u dışa aktarır ama içe aktarma ekranı henüz yok.
 - Bildirim (push/yerel hatırlatma) yok; görevler uygulama içinde listelenir.
+- Yedekleme elle; otomatik ya da buluta senkron yedek yok.
+- Geri yükleme birleştirme yapmaz, yerine koyar.
 - Fotoğraf eki ve konum/harita desteği yok.
 - Önbellek adı (`kovan-defteri-v1`) elle yönetiliyor. Yeni dağıtımlarda kabuk ağ-önce
   çekildiği ve paket adları hash'li olduğu için güncellemeler kendiliğinden geçer;

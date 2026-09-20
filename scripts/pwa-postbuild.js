@@ -205,6 +205,39 @@ function verify() {
   fonts.forEach((f) => console.log('  font: ' + path.relative(distDir, f).replace(/\\/g, '/')));
 }
 
+// --------------------------------------------------------- 4) derleme kimligi
+
+function stampServiceWorker() {
+  const swPath = path.join(distDir, 'sw.js');
+  if (!fs.existsSync(swPath)) {
+    console.error('dist/sw.js yok.');
+    process.exit(1);
+  }
+
+  // build-info.ts bir TypeScript dosyasi, require edilemez; kimligi
+  // dogrudan iceriginden okuyoruz.
+  const infoPath = path.join(__dirname, '..', 'src', 'lib', 'build-info.ts');
+  const info = fs.readFileSync(infoPath, 'utf8');
+  const match = info.match(/BUILD_ID = '([^']+)'/);
+  if (!match) {
+    console.error('build-info.ts icinde BUILD_ID bulunamadi. Once: node scripts/build-info.js');
+    process.exit(1);
+  }
+  const BUILD_ID = match[1];
+
+  let sw = fs.readFileSync(swPath, 'utf8');
+
+  if (!sw.includes('__BUILD_ID__')) {
+    console.log('sw.js zaten damgalanmis, atlaniyor');
+    return;
+  }
+
+  sw = sw.split('__BUILD_ID__').join(BUILD_ID);
+  fs.writeFileSync(swPath, sw);
+  console.log(`sw.js derleme kimligiyle damgalandi: ${BUILD_ID}`);
+}
+
 relocateVendorAssets();
 injectHead();
+stampServiceWorker();
 verify();
