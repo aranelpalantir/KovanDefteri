@@ -43,7 +43,8 @@
     "typecheck": "tsc --noEmit",
     "build:web": "node scripts/build-info.js && expo export --platform web --clear && node scripts/pwa-postbuild.js",
     "serve:web": "node scripts/serve-dist.js",
-    "icons": "node scripts/make-icons.js"
+    "icons": "node scripts/make-icons.js",
+    "test:migrations": "node --test scripts/migrations.test.ts"
   },
   "private": true
 }

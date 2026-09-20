@@ -13,9 +13,21 @@ import {
   type Task,
 } from './types';
 
+/**
+ * Kayitlar okunamadiginda uygulama kilitlenir: hicbir sey yazilmaz, boylece
+ * bozuk ya da cok yeni bir belgenin uzerine yazip veriyi yok etmeyiz.
+ */
+export type StoreIssue = { message: string; raw: string | null };
+
 type Store = {
   db: Database;
   ready: boolean;
+  /** Doluysa uygulama salt-okunur; kullaniciya kurtarma ekrani gosterilir. */
+  issue: StoreIssue | null;
+  /** Kullanici bilerek sifirdan baslamayi sectiginde kilidi acar. */
+  startFresh: () => void;
+  /** Goc calistiysa hangi adimlarin uygulandigi. */
+  migrationsApplied: string[];
 
   addApiary: (data: Omit<Apiary, 'id' | 'createdAt'>) => Apiary;
   updateApiary: (id: ID, patch: Partial<Apiary>) => void;
@@ -52,24 +64,44 @@ const StoreContext = createContext<Store | null>(null);
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [db, setDb] = useState<Database>(emptyDatabase);
   const [ready, setReady] = useState(false);
+  const [issue, setIssue] = useState<StoreIssue | null>(null);
+  const [migrationsApplied, setMigrationsApplied] = useState<string[]>([]);
   const dirty = useRef(false);
 
   useEffect(() => {
-    loadDatabase().then((loaded) => {
-      setDb(loaded);
+    loadDatabase().then((result) => {
+      if (result.ok) {
+        setDb(result.db);
+        setMigrationsApplied(result.applied);
+      } else {
+        setIssue({ message: result.message, raw: result.raw });
+      }
       setReady(true);
     });
   }, []);
 
   // İlk yüklemeden sonraki her değişikliği diske yaz.
   useEffect(() => {
-    if (!ready || !dirty.current) return;
+    if (!ready || !dirty.current || issue) return;
     saveDatabase(db).catch(() => {});
-  }, [db, ready]);
+  }, [db, ready, issue]);
 
-  const mutate = useCallback((fn: (prev: Database) => Database) => {
-    dirty.current = true;
-    setDb(fn);
+  const mutate = useCallback(
+    (fn: (prev: Database) => Database) => {
+      // Kilitliyken hicbir degisiklik kabul edilmez; aksi halde kullanici
+      // kurtarilamayacak veriyi ezmeye devam eder.
+      if (issue) return;
+      dirty.current = true;
+      setDb(fn);
+    },
+    [issue],
+  );
+
+  const startFresh = useCallback(() => {
+    clearDatabase().catch(() => {});
+    setDb(emptyDatabase());
+    setIssue(null);
+    dirty.current = false;
   }, []);
 
   const value = useMemo<Store>(() => {
@@ -79,6 +111,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return {
       db,
       ready,
+      issue,
+      startFresh,
+      migrationsApplied,
 
       addApiary(data) {
         const item = create<Apiary>('ap', data);
@@ -174,7 +209,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       harvestsOf: (hiveId) => byDateDesc(db.harvests.filter((h) => h.hiveId === hiveId)),
       lastInspection: (hiveId) => byDateDesc(db.inspections.filter((i) => i.hiveId === hiveId))[0],
     };
-  }, [db, ready, mutate]);
+  }, [db, ready, mutate, issue, startFresh, migrationsApplied]);
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }
