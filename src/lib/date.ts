@@ -68,3 +68,14 @@ export function seasonHint(iso: ISODate = todayISO()): { season: string; tip: st
   if (month <= 10) return { season: 'Sonbahar hazırlığı', tip: 'Varroa uygulaması ve kışlık yem takviyesi.' };
   return { season: 'Kışa giriş', tip: 'Kovan ağırlığını ölçün, uçuş deliğini daraltın.' };
 }
+
+/**
+ * Tam ISO zaman damgasindan "20:07". Diger yardimcilar gun bazli ISODate
+ * alir; bu, saat tasiyan damgalar (ornegin son yedek zamani) icindir.
+ */
+export function formatTime(isoTimestamp: string): string {
+  const d = new Date(isoTimestamp);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n: number) => `${n}`.padStart(2, '0');
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}

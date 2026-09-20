@@ -11,7 +11,7 @@ import { Text } from '@/components/ui/text';
 import { useTheme } from '@/hooks/use-theme';
 import { exportBackup, parseBackup, pickBackupFile } from '@/lib/backup';
 import { BUILD_COMMIT, BUILD_DATE, BUILD_TIME, VERSION_LABEL } from '@/lib/build-info';
-import { daysSince, formatLong, relativeDays } from '@/lib/date';
+import { daysSince, formatLong, formatTime, relativeDays } from '@/lib/date';
 import { confirm } from '@/lib/confirm';
 import { buildDemoDatabase } from '@/lib/demo';
 import { useStore } from '@/lib/store';
@@ -65,11 +65,13 @@ export default function SettingsScreen() {
       };
     }
     const day = db.lastBackupAt.slice(0, 10);
+    const time = formatTime(db.lastBackupAt);
+    const stamp = time ? `${formatLong(day)}, ${time}` : formatLong(day);
     const gap = daysSince(day);
     if (gap > 21) {
       return {
         text: `Son yedek ${gap} gün önce`,
-        hint: `${formatLong(day)} tarihinden beri yedek alınmadı.`,
+        hint: `${stamp} tarihinden beri yedek alınmadı.`,
         color: theme.danger,
         icon: 'alert-circle-outline',
       };
@@ -77,14 +79,14 @@ export default function SettingsScreen() {
     if (gap > 7) {
       return {
         text: `Son yedek ${gap} gün önce`,
-        hint: 'Arılığa her gidişten sonra yedek almanız önerilir.',
+        hint: `${stamp} · arılığa her gidişten sonra yedek almanız önerilir.`,
         color: theme.warning,
         icon: 'time-outline',
       };
     }
     return {
       text: `Son yedek ${relativeDays(day)}`,
-      hint: formatLong(day),
+      hint: stamp,
       color: theme.success,
       icon: 'shield-checkmark-outline',
     };
