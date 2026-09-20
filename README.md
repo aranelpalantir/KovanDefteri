@@ -1,56 +1,72 @@
-# Welcome to your Expo app 👋
+# Kovan Defteri
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Arıcılar için çevrimdışı kovan muayene ve üretim takibi. Kağıt defterin yerini alır:
+her kovanın muayene geçmişini, ana arı durumunu, oğul riskini, yem seviyesini ve hasadını
+tek yerde tutar. İnternet bağlantısı gerekmez; hiçbir veri cihazdan çıkmaz.
 
-## Get started
+## Ne yapar
 
-1. Install dependencies
+- **Arılık → kovan → muayene** hiyerarşisi. Gezginci arıcılık için birden çok arılık.
+- **Muayene formu** tek ekranda: koloni gücü, huy, ana/yumurta durumu, çerçeve sayıları,
+  ana arı memesi, yem seviyesi, sorunlar (varroa, kireç hastalığı, yavru çürüklüğü…) ve
+  yapılan işlemler.
+- **Türetilmiş uyarılar** — uygulama kayıtları okuyup kendisi yorumluyor:
+  - *Oğul riski*: kapalı/açık meme + yüksek güç + dolu ballık kombinasyonu.
+  - *Analık şüphesi*: ne ana ne yumurta görüldüyse.
+  - *Bakım gecikmesi*: 14 günü aşan aralıklarda sarı, 21 günü aşınca kırmızı.
+  - *Ana yenileme*: ana arı 3 yaşını geçtiğinde.
+- **Uyarlanabilir kontrol aralığı**: memeli kovanda 7 gün, güçlü kovanda 10, diğerlerinde 14.
+  Sonraki kontrol otomatik görev olarak listeye düşer.
+- **Ana arı işaret rengi** uluslararası standarda göre yıldan hesaplanır (1/6 beyaz,
+  2/7 sarı, 3/8 kırmızı, 4/9 yeşil, 5/0 mavi) ve kovan kartında kart rengi olur.
+- **Sezon özeti**: aylık bal hasadı grafiği, kovan verimlilik sıralaması, koloni durum
+  dağılımı, acil ilgi isteyen kovanlar.
+- **Mevsim ipucu**: içinde bulunulan aya göre ne yapılması gerektiğini hatırlatır.
 
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Çalıştırma
 
 ```bash
-npm run reset-project
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Telefonda **Expo Go** ile QR kodu okutun. Web önizlemesi için `npx expo start --web`.
 
-### Other setup steps
+> Expo SDK 57 Node.js **20.19.4+** ister. Bu makinede v20.11.1 kurulu; uygulama çalışıyor
+> ancak Metro başlarken sürüm uyarısı veriyor. Sorun yaşarsanız Node LTS'i güncelleyin.
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+Uygulamayı boş görmek istemiyorsanız **Ayarlar → Örnek veri yükle** ile 5 kovanlık
+gerçekçi bir sezon yükleyebilirsiniz.
 
-## Learn more
+## Mimari
 
-To learn more about developing your project with Expo, look at the following resources:
+```
+src/
+  app/                    expo-router rotaları
+    (tabs)/               Kovanlar · Görevler · Özet
+    hive/[id].tsx         kovan detayı ve muayene geçmişi
+    hive/new.tsx          kovan ekle/düzenle
+    inspection/new.tsx    muayene formu
+    harvest/new.tsx       hasat kaydı
+    apiary/new.tsx        arılık ekle
+    settings.tsx          arılık yönetimi, yedek, örnek veri
+  components/             ekranlara özel kartlar + ui/ altında tasarım sistemi
+  lib/
+    types.ts              veri modeli ve sabit listeler
+    beekeeping.ts         alan bilgisi: uyarılar, oğul riski, ana arı rengi, trend
+    date.ts               ISO tarih yardımcıları ve Türkçe biçimlendirme
+    store.tsx             React context tabanlı veri deposu
+    storage.ts            AsyncStorage kalıcılığı
+    demo.ts               örnek sezon üreteci
+    confirm.ts            platformlar arası onay kutusu
+  theme/colors.ts         bal temalı açık/koyu palet
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Veri tek bir JSON belgesi olarak `AsyncStorage` içinde `kovan-defteri/v1` anahtarında
+tutulur. Her mutasyon sonrası diske yazılır; okuma tarafı `useStore()` üzerinden gider.
 
-## Join the community
+## Bilinen sınırlar
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- Yedekleme JSON'u dışa aktarır ama içe aktarma ekranı henüz yok.
+- Bildirim (push/yerel hatırlatma) yok; görevler uygulama içinde listelenir.
+- Fotoğraf eki ve konum/harita desteği yok.
