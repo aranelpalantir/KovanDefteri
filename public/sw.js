@@ -1,44 +1,80 @@
 /**
- * Kovan Defteri service worker.
+ * Kovan Defteri service worker (Safari/WebKit Redirect-Safe & Auto-Update).
  *
  * Uygulama tek sayfalık (web.output: "single") olduğu için her gezinme isteği
- * index.html'e düşer. Paket dosya adları derlemede hash aldığından önceden
- * listelenemez; strateji şu:
+ * index.html'e düşer.
  *
- *   - gezinme (navigate): önce ağ, NETWORK_TIMEOUT_MS içinde cevap gelmezse
- *     önbellekteki uygulama kabuğu. Arılıkta tek çubuk sinyalde kullanıcı
- *     açılışı bekleyip durmasın diye.
- *   - aynı origindeki GET: önbellekten ver, arka planda tazele.
+ * Safari WebKit kısıtı:
+ *   Safari WebKit, event.respondWith'e verilen yanıtın "response.redirected === true"
+ *   olmasına izin vermez; aksi halde "Response served by service worker has redirections"
+ *   hatası fırlatarak sayfanın açılmasını engeller.
+ *   cleanResponse() fonksiyonu yanıtı temiz bir Response nesnesi olarak yeniden kurar.
  *
- * Güncelleme akışı: yeni sürüm kurulduğunda KENDİLİĞİNDEN devralmaz. Bekler,
- * uygulama kullanıcıya "yeni sürüm hazır" der, kullanıcı onaylayınca
- * SKIP_WAITING mesajı gelir ve devralır. Böylece kullanıcı muayene
- * kaydederken ayağının altından paket değişmez.
- *
- * __BUILD_ID__ derleme sonrasında scripts/pwa-postbuild.js tarafından gerçek
- * derleme kimliğiyle değiştirilir; her yayın kendi önbelleğini alır, eskiler
- * activate sırasında silinir.
+ * Güncelleme akışı:
+ *   Yeni sürüm kurulduğunda self.skipWaiting() ve self.clients.claim() ile
+ *   hemen devralınır. scripts/pwa-postbuild.js içerisindeki reg.update() ile
+ *   her sayfa açılışında yeni sürüm kontrolü yapılır.
  */
 const BUILD_ID = '__BUILD_ID__';
 const VERSION = `kovan-defteri-${BUILD_ID}`;
 const SHELL = '/';
 const NETWORK_TIMEOUT_MS = 3000;
 
+/**
+ * Safari WebKit restricts responses passed to event.respondWith from having
+ * response.redirected === true. Otherwise, WebKit throws:
+ * "Response served by service worker has redirections".
+ * This function reconstructs a fresh Response object without the redirected flag.
+ */
+function cleanResponse(response) {
+  if (!response || !response.redirected || response.status === 0) {
+    return response;
+  }
+  try {
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+    });
+  } catch (err) {
+    return response;
+  }
+}
+
+// 1. Kurulum: Varlıkları önbelleğe al ve hemen aktifleş
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
       .open(VERSION)
-      .then((cache) => cache.addAll([SHELL]))
-      .catch(() => {}),
+      .then(async (cache) => {
+        try {
+          const res = await fetch(SHELL, { redirect: 'follow' });
+          if (res.ok) {
+            await cache.put(SHELL, cleanResponse(res));
+          }
+        } catch (err) {
+          console.warn('[SW] Precache failed for:', SHELL, err);
+        }
+      })
+      .then(() => self.skipWaiting()),
   );
-  // Bilerek skipWaiting yok: devralma kararı kullanıcının.
 });
 
+// 2. Etkinleştirme: Eski önbellekleri temizle ve kontrolü hemen devral
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k))))
+      .then((keys) =>
+        Promise.all(
+          keys
+            .filter((k) => k !== VERSION)
+            .map((k) => {
+              console.log('[SW] Eski önbellek siliniyor:', k);
+              return caches.delete(k);
+            }),
+        ),
+      )
       .then(() => self.clients.claim()),
   );
 });
@@ -55,9 +91,7 @@ self.addEventListener('message', (event) => {
 
   /**
    * Sayfa "çevrimdışı kopyayı tazele" dediğinde verilen adresleri ağdan
-   * zorla çekip önbelleğe yazar. Service worker'ın içindeki fetch kendi
-   * fetch dinleyicisine takılmadığı için burada gerçekten ağa gidilir;
-   * sayfadan yapılan istek önbellekten dönebilirdi.
+   * zorla çekip önbelleğe yazar.
    */
   if (data.type === 'REFRESH_CACHE' && Array.isArray(data.urls)) {
     const port = event.ports && event.ports[0];
@@ -67,9 +101,9 @@ self.addEventListener('message', (event) => {
         const results = await Promise.all(
           data.urls.map(async (url) => {
             try {
-              const response = await fetch(url, { cache: 'reload' });
+              const response = await fetch(url, { cache: 'reload', redirect: 'follow' });
               if (!response || response.status !== 200) return false;
-              await cache.put(url === '/' ? SHELL : url, response);
+              await cache.put(url === '/' ? SHELL : url, cleanResponse(response));
               return true;
             } catch {
               return false;
@@ -86,7 +120,7 @@ self.addEventListener('message', (event) => {
 function networkWithTimeout(request) {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error('timeout')), NETWORK_TIMEOUT_MS);
-    fetch(request).then(
+    fetch(request, { redirect: 'follow' }).then(
       (response) => {
         clearTimeout(timer);
         resolve(response);
@@ -99,6 +133,7 @@ function networkWithTimeout(request) {
   });
 }
 
+// 3. İstek Yönetimi: Çevrimdışı destek, hızlı başlatma ve WebKit koruması
 self.addEventListener('fetch', (event) => {
   const { request } = event;
 
@@ -107,42 +142,68 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  // Service worker'ın kendisi önbelleğe girmesin: güncelleme kontrolü
-  // her zaman ağdan yapılmalı.
+  // Service worker'ın kendisi önbelleğe girmesin: güncelleme kontrolü her zaman ağdan yapılmalı.
   if (url.pathname === '/sw.js') return;
 
+  // Sayfa yönlendirme / PWA açılış istekleri (Navigasyon)
   if (request.mode === 'navigate') {
     event.respondWith(
-      networkWithTimeout(request)
-        .then((response) => {
-          const copy = response.clone();
-          caches.open(VERSION).then((cache) => cache.put(SHELL, copy));
-          return response;
-        })
-        .catch(async () => {
-          const shell = await caches.match(SHELL);
-          if (shell) return shell;
-          const exact = await caches.match(request);
-          if (exact) return exact;
-          return Response.error();
-        }),
+      (async () => {
+        const cachedResponse = (await caches.match(request)) || (await caches.match(SHELL));
+
+        const fetchPromise = networkWithTimeout(request)
+          .then(async (networkResponse) => {
+            if (networkResponse && networkResponse.ok) {
+              const cache = await caches.open(VERSION);
+              cache.put(SHELL, cleanResponse(networkResponse.clone()));
+              cache.put(request, cleanResponse(networkResponse.clone()));
+            }
+            return cleanResponse(networkResponse);
+          })
+          .catch(() => null);
+
+        // Önbellekte varsa Safari yönlendirme hatasını temizleyip anında sun
+        if (cachedResponse) {
+          return cleanResponse(cachedResponse);
+        }
+
+        // Önbellekte yoksa ağ yanıtını bekle
+        const networkResponse = await fetchPromise;
+        if (networkResponse) {
+          return cleanResponse(networkResponse);
+        }
+
+        return new Response('Kovan Defteri - Çevrimdışı', {
+          status: 503,
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+        });
+      })(),
     );
     return;
   }
 
+  // Statik dosyalar (JS paketleri, CSS, İkonlar, Fontlar) - Stale While Revalidate
   event.respondWith(
-    caches.match(request).then((cached) => {
-      const network = fetch(request)
-        .then((response) => {
+    (async () => {
+      const cached = await caches.match(request);
+      const fetchPromise = fetch(request)
+        .then(async (response) => {
           if (response && response.status === 200 && response.type === 'basic') {
-            const copy = response.clone();
-            caches.open(VERSION).then((cache) => cache.put(request, copy));
+            const cache = await caches.open(VERSION);
+            cache.put(request, cleanResponse(response.clone()));
           }
-          return response;
+          return cleanResponse(response);
         })
-        .catch(() => cached);
+        .catch(() => null);
 
-      return cached ?? network;
-    }),
+      if (cached) {
+        return cleanResponse(cached);
+      }
+
+      const network = await fetchPromise;
+      if (network) return cleanResponse(network);
+
+      return new Response('', { status: 404 });
+    })(),
   );
 });
