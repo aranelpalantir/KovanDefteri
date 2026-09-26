@@ -48,6 +48,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
+    "build": "npm run build:web",
     "build:web": "node scripts/build-info.js && expo export --platform web --clear && node scripts/pwa-postbuild.js",
     "serve:web": "node scripts/serve-dist.js",
     "icons": "node scripts/make-icons.js",
