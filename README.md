@@ -1,10 +1,26 @@
-# Kovan Defteri
+# 🐝 Kovan Defteri - Dijital Arılık & Kovan Muayene Takip Defteri
 
-**Canlı:** https://kovan-defteri.pages.dev
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Expo](https://img.shields.io/badge/Expo-SDK%2057-000020.svg?logo=expo)](https://expo.dev)
+[![React Native](https://img.shields.io/badge/React%20Native-0.86-61DAFB.svg?logo=react)](https://reactnative.dev)
+[![PWA Ready](https://img.shields.io/badge/PWA-Offline%20First-5A0FC8.svg?logo=pwa)](#)
+[![Cloudflare Pages](https://img.shields.io/badge/Deployed%20with-Cloudflare%20Pages-F38020.svg?logo=cloudflare)](https://kovan-defteri.pages.dev/)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-kovan--defteri.pages.dev-success.svg)](https://kovan-defteri.pages.dev/)
+[![AI-Assisted](https://img.shields.io/badge/Developed%20with-AI%20Pair%20Programming-8A2BE2.svg)](#)
+[![GitHub Repository](https://img.shields.io/badge/GitHub-KovanDefteri-181717.svg?logo=github)](https://github.com/aranelpalantir/KovanDefteri)
 
-Arıcılar için çevrimdışı kovan muayene ve üretim takibi. Kağıt defterin yerini alır:
-her kovanın muayene geçmişini, ana arı durumunu, oğul riskini, yem seviyesini ve hasadını
-tek yerde tutar. İnternet bağlantısı gerekmez; hiçbir veri cihazdan çıkmaz.
+> **Kovan Defteri**, arıcıların saha ve arılık koşullarında internete ihtiyaç duymadan kovan muayene, ana arı durumu, oğul riski analizi, yemleme ve bal hasadı kayıtlarını tutabilmesi için **yapay zeka destekli eşli programlama (AI Pair Programming)** mimarisiyle geliştirilmiş, çevrimdışı öncelikli (Offline-first) modern bir PWA ve mobil takip sistemidir.
+
+Kağıt defterin yerini alır: her kovanın muayene geçmişini, ana arı durumunu, oğul riskini, yem seviyesini ve hasadını tek yerde tutar. İnternet bağlantısı gerekmez; hiçbir veri cihazdan çıkmaz.
+
+---
+
+## 🌐 Canlı Demo (Web & Mobil PWA)
+
+Uygulamayı tarayıcınızdan veya mobil cihazınızdan (ana ekrana ekleyerek tam ekran ve çevrimdışı) doğrudan deneyimleyebilirsiniz:  
+👉 **[https://kovan-defteri.pages.dev/](https://kovan-defteri.pages.dev/)**
+
+---
 
 ## Ne yapar
 
@@ -261,3 +277,18 @@ alınabiliyor; "sıfırdan başla" ayrı ve onaylı bir seçim.
   çekildiği ve paket adları hash'li olduğu için güncellemeler kendiliğinden geçer;
   ancak eski paketler önbellekte birikir. Temizlemek için `sw.js` içindeki `VERSION`
   değerini artırmak yeterli.
+
+---
+
+## 🤖 Geliştirme Süreci (AI-Assisted Engineering)
+
+Bu projedeki veri mimarisi (sürümlü şema göçü, bozuk JSON karantina ve kurtarma ekranı mekanizması), runtime varlık toplayan çevrimdışı PWA service worker mimarisi, Cloudflare Pages uyumluluğu sağlayan post-build hash yenileyici ve arıcılık alan bilgisi kuralları (uluslararası ana arı renk kodlaması, otomatik oğul riski tespiti, analık şüphesi algoritmaları), **yapay zeka destekli eşli programlama (AI Pair Programming)** mimarisiyle sıfırdan tasarlanıp optimize edilmiştir.
+
+---
+
+## 📄 Lisans ve Açık Kaynak
+
+Bu proje [MIT Lisansı](LICENSE) kapsamında açık kaynak olarak lisanslanmıştır.  
+Kaynak kodları, hata bildirimleri ve katkılar için GitHub deposu:  
+👉 **[https://github.com/aranelpalantir/KovanDefteri](https://github.com/aranelpalantir/KovanDefteri)**
+

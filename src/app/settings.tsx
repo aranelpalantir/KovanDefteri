@@ -1,3 +1,4 @@
+import * as Linking from 'expo-linking';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -361,7 +362,7 @@ export default function SettingsScreen() {
         </Card>
       </Section>
 
-      <Section title="Uygulama">
+      <Section title="Uygulama & Açık Kaynak">
         <Card>
           <View style={styles.versionRow}>
             <Text variant="body" color="textMuted">
@@ -376,6 +377,34 @@ export default function SettingsScreen() {
             <Text variant="mono" color="textMuted">
               {BUILD_TIME} · {BUILD_COMMIT}
             </Text>
+          </View>
+
+          <View
+            style={[
+              styles.versionRow,
+              {
+                marginTop: Spacing.sm,
+                paddingTop: Spacing.sm,
+                borderTopWidth: StyleSheet.hairlineWidth,
+                borderTopColor: theme.border,
+              },
+            ]}>
+            <Text variant="body" color="textMuted">
+              Kaynak Kodu
+            </Text>
+            <Pressable
+              accessibilityRole="link"
+              accessibilityLabel="GitHub Deposu"
+              onPress={() => Linking.openURL('https://github.com/aranelpalantir/KovanDefteri')}
+              hitSlop={8}
+              style={({ pressed }) => [
+                { flexDirection: 'row', alignItems: 'center', gap: 6, opacity: pressed ? 0.6 : 1 },
+              ]}>
+              <Ionicons name="logo-github" size={16} color={theme.primary} />
+              <Text variant="label" style={{ color: theme.primary }}>
+                aranelpalantir/KovanDefteri
+              </Text>
+            </Pressable>
           </View>
 
           <Text variant="caption" color="textMuted" style={{ marginTop: Spacing.md }}>
@@ -455,9 +484,24 @@ export default function SettingsScreen() {
         </Card>
       </Section>
 
-      <Text variant="caption" color="textMuted" center>
-        Kovan Defteri · {VERSION_LABEL}
-      </Text>
+      <View style={{ alignItems: 'center', gap: Spacing.xs }}>
+        <Text variant="caption" color="textMuted" center>
+          Kovan Defteri · {VERSION_LABEL}
+        </Text>
+        <Pressable
+          accessibilityRole="link"
+          accessibilityLabel="GitHub Deposu"
+          onPress={() => Linking.openURL('https://github.com/aranelpalantir/KovanDefteri')}
+          hitSlop={8}
+          style={({ pressed }) => [
+            { flexDirection: 'row', alignItems: 'center', gap: 4, opacity: pressed ? 0.6 : 1 },
+          ]}>
+          <Ionicons name="logo-github" size={13} color={theme.textMuted} />
+          <Text variant="caption" color="textMuted">
+            GitHub Deposu (Açık Kaynak)
+          </Text>
+        </Pressable>
+      </View>
     </ScrollView>
   );
 }

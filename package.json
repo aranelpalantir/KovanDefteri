@@ -2,6 +2,13 @@
   "name": "kovan-defteri",
   "main": "expo-router/entry",
   "version": "1.0.0",
+  "description": "Arıcılar için çevrimdışı öncelikli (Offline-first PWA) kovan muayene ve üretim takip sistemi.",
+  "homepage": "https://kovan-defteri.pages.dev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aranelpalantir/KovanDefteri.git"
+  },
+  "license": "MIT",
   "dependencies": {
     "@expo/ui": "~57.0.19",
     "@expo/vector-icons": "^15.0.2",
